@@ -3,9 +3,6 @@ package Allocator;
 import java.util.*;
 
 public class SingleThreadedAllocatorImplementation implements Allocator {
-    /* Modify this static var to return an instantiated version of your allocator  */
-    private static Allocator instance = null;
-
     private HashMap<Integer, Arena> pageSizes;
 
     // Find the best fitted size (e.g. 3015 -> 4096, 17 -> 32, ...)
@@ -24,7 +21,7 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
 
     public Long allocate(int size) {
         int roundedSize = roundUp(size);
-        if (roundedSize > Block.UNIT_BLOCK_SIZE) {
+        if (!pageSizes.containsKey(roundedSize)) {
             pageSizes.put(roundedSize, new Arena(roundedSize));
         }
         return pageSizes.get(roundedSize).getPage();
@@ -59,8 +56,6 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
     }
 
     public boolean isAccessible(Long address, int size) {
-        //System.out.println(address);
-        //System.out.println(size);
         Arena arena = pageSizes.get(roundUp(size));
         return arena.isAccessible(address);
     }

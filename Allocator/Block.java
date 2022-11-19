@@ -8,17 +8,13 @@ public class Block {
     private final Long startAddress;
     private final int pageSize;
     private final int blockSize;
-
-    private BitSet allocatedPages;
+    private final BitSet allocatedPages = new BitSet();
 
     public Block(Long startAddress, int pageSize, int blockSize) {
         this.startAddress = startAddress;
         this.pageSize = pageSize;
         this.blockSize = blockSize;
-
-        allocatedPages = new BitSet();
     }
-
 
     public Long getStartAddress() {
         return startAddress;
@@ -29,11 +25,10 @@ public class Block {
     }
 
     public Long getPage() throws AllocatorException {
-        for (int i = 0; i < blockSize; i += pageSize){
+        for (int i = 0; i < blockSize; i += pageSize) {
             int pageIndex = i / pageSize;
-            if (!allocatedPages.get(pageIndex)){
+            if (!allocatedPages.get(pageIndex)) {
                 allocatedPages.set(pageIndex);
-                // System.out.println(startAddress + i + " is allocated!");
                 return startAddress + i;
             }
         }
@@ -55,11 +50,9 @@ public class Block {
     }
 
     public boolean hasFreePages(){
-        for (int i = 0; i < blockSize / pageSize; i++) {
-            if (!allocatedPages.get(i)) {
+        for (int i = 0; i < blockSize / pageSize; i++)
+            if (!allocatedPages.get(i))
                 return true;
-            }
-        }
         return false;
     }
 
