@@ -29,6 +29,7 @@ public class Bank {
                 add(new Account(i));
         }});
         workers = Collections.unmodifiableList(new ArrayList() {{
+//            for (int i = 0; i < 100; i++)
             for (int i = 0; i < 1; i++)
                 add(new Worker(Bank.this));
         }});

@@ -35,18 +35,13 @@ public class Block {
         throw new AllocatorException("No free pages in block");
     }
 
-    public void freePage(Long address) throws AllocatorException, EmptyBlockException {
-        // System.out.println(address + " is free!");
+    public boolean freePage(Long address) throws AllocatorException {
         Long relativeAddress = address - startAddress;
-
-        if (relativeAddress < 0)
-            throw new AllocatorException("Page not present in block");
 
         int pageIndex = (int) Math.floor(relativeAddress / pageSize);
         allocatedPages.set(pageIndex, false);
 
-        if (allocatedPages.isEmpty())
-            throw new EmptyBlockException("Block is empty");
+        return allocatedPages.isEmpty();
     }
 
     public boolean hasFreePages(){

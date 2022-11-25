@@ -1,10 +1,11 @@
 package Allocator;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Arena {
-    private LinkedList<Block> memoryBlocks = new LinkedList<>();
-    private BackingStore backingStore = BackingStore.getInstance();;
+    private List<Block> memoryBlocks = new ArrayList<>();
+    private BackingStore backingStore = BackingStore.getInstance();
 
     // size of the blocks in de arena
     private int blockSize;
@@ -36,9 +37,7 @@ public class Arena {
     public void freePage(Long address) throws AllocatorException {
         for (Block block : memoryBlocks) {
             if (block.isAccessible(address)) {
-                try {
-                    block.freePage(address);
-                } catch (EmptyBlockException e) {
+                if (block.freePage(address)) {
                     memoryBlocks.remove(block);
                     backingStore.munmap(block.getStartAddress(), block.getBlockSize());
                 }
