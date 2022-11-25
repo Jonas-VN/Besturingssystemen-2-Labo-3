@@ -19,35 +19,54 @@ public class Arena {
     }
 
     public Long getPage() {
-        for (Block block : blocks)
-            if (block.hasFreePages())
-                return block.getPage();
+        synchronized (blocks) {
+            for (Block block : blocks) {
+                synchronized (block) {
+                    if (block.hasFreePages()) {
+                        return block.getPage();
+                    }
+                }
+            }
+        }
 
         // Geen plaats meer -> nieuwe toevoegen
         Long ret = BackingStore.getInstance().mmap(blockSize);
         Block block = new Block(ret, pageSize, blockSize);
-        blocks.add(block);
+
+        synchronized (blocks) {
+            blocks.add(block);
+        }
         return block.getPage();
     }
 
     public void freePage(Long address) throws AllocatorException {
-        for (Block block : blocks) {
-            if (block.isAccessible(address)) {
-                // block.freePage(address) returns true als het block leeg is -> block verwijderen
-                if (block.freePage(address)) {
-                    blocks.remove(block);
-                    BackingStore.getInstance().munmap(block.getStartAddress(), block.getBlockSize());
+        synchronized (blocks) {
+            for (Block block : blocks) {
+                synchronized (block) {
+                    if (block.isAccessible(address)) {
+                        // block.freePage(address) returns true als het block leeg is -> block verwijderen
+                        if (block.freePage(address)) {
+                            blocks.remove(block);
+                            BackingStore.getInstance().munmap(block.getStartAddress(), block.getBlockSize());
+                        }
+                        return;
+                    }
                 }
-                return;
             }
         }
         throw new AllocatorException("Page not present in arena");
     }
 
     public boolean isAccessible(Long address) {
-        for (Block block : blocks)
-            if (block.isAccessible(address))
-                return true;
+        synchronized (blocks) {
+            for (Block block : blocks) {
+                synchronized (block) {
+                    if (block.isAccessible(address)) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 }

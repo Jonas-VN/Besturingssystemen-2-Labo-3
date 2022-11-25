@@ -1,44 +1,57 @@
 package Allocator;
 
-import java.util.HashMap;
+import java.util.*;
 
 public class MultiThreadedAllocatorImplementation implements Allocator {
-    private HashMap<Integer, Arena> pageSizes;
+    private final HashMap<Integer, Arena> pageSizes;
+    private static final double LOG_2 = Math.log(2); // niet nodig om telkens opnieuw te berekenen
+
+    // bit shifts zouden sneller moeten zijn ipv Math.pow(2, i)
+    private static int pow2(int exp) {
+        return 1 << exp; // -> 2^exp
+    }
 
     // Find the best fitted size (e.g. 3015 -> 4096, 17 -> 32, ...)
     public static int roundUp(int size){
-        return (int) Math.pow(2, Math.ceil(Math.log(size) / Math.log(2)));
+        return pow2((int) Math.ceil(Math.log(size) / LOG_2));
     }
 
     public MultiThreadedAllocatorImplementation() {
         this.pageSizes = new HashMap<>();
 
-        for (int i = 3; i < 13; i++) {
-            int pageSize = (int) Math.pow(2, i);
+        for (int i = 0; i < 13; i++) {
+            int pageSize = pow2(i);
             pageSizes.put(pageSize, new Arena(4096, pageSize));
         }
     }
 
     public Long allocate(int size) {
         int roundedSize = roundUp(size);
-        if (!pageSizes.containsKey(roundedSize)) {
-            pageSizes.put(roundedSize, new Arena(roundedSize));
+        synchronized (pageSizes) {
+            if (!pageSizes.containsKey(roundedSize)) {
+                pageSizes.put(roundedSize, new Arena(roundedSize));
+            }
+            return pageSizes.get(roundedSize).getPage();
         }
-        return pageSizes.get(roundedSize).getPage();
     }
 
-    private Arena getLocation(Long address) {
-        for (Arena arena : pageSizes.values()) {
-            if (arena.isAccessible(address))
-                return arena;
+    private Arena getArena(Long address) {
+        synchronized (pageSizes) {
+            for (Arena arena : pageSizes.values()) {
+                synchronized (arena) {
+                    if (arena.isAccessible(address))
+                        return arena;
+                }
+            }
         }
         return null;
     }
 
     public void free(Long address) {
-        Arena arena = getLocation(address);
-        if (arena != null)
+        Arena arena = getArena(address);
+        synchronized (arena) {
             arena.freePage(address);
+        }
     }
 
     public Long reAllocate(Long oldAddress, int newSize) {
@@ -47,16 +60,23 @@ public class MultiThreadedAllocatorImplementation implements Allocator {
     }
 
     public boolean isAccessible(Long address) {
-        for (Integer entry : pageSizes.keySet()) {
-            if (pageSizes.get(entry).isAccessible(address)) {
-                return true;
+        synchronized (pageSizes) {
+            for (Integer entry : pageSizes.keySet()) {
+                if (pageSizes.get(entry).isAccessible(address)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
     public boolean isAccessible(Long address, int size) {
-        Arena arena = pageSizes.get(roundUp(size));
-        return arena.isAccessible(address);
+        synchronized (pageSizes) {
+            Arena arena = pageSizes.get(roundUp(size));
+            synchronized (arena) {
+                return arena.isAccessible(address);
+            }
+        }
+
     }
 }

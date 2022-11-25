@@ -24,11 +24,13 @@ public class Block {
     }
 
     public Long getPage() throws AllocatorException {
-        for (int offset = 0; offset < blockSize; offset += pageSize) {
-            int pageIndex = offset / pageSize;
-            if (!pages.get(pageIndex)) {
-                pages.set(pageIndex);
-                return startAddress + offset;
+        synchronized (pages) {
+            for (int offset = 0; offset < blockSize; offset += pageSize) {
+                int pageIndex = offset / pageSize;
+                if (!pages.get(pageIndex)) {
+                    pages.set(pageIndex);
+                    return startAddress + offset;
+                }
             }
         }
         throw new AllocatorException("No free pages in block");
@@ -38,15 +40,21 @@ public class Block {
         Long virtualAddress = address - startAddress;
 
         int pageIndex = (int) Math.floor(virtualAddress / pageSize);
-        pages.set(pageIndex, false);
 
-        return pages.isEmpty();
+        synchronized (pages) {
+            pages.set(pageIndex, false);
+            return pages.isEmpty();
+        }
     }
 
     public boolean hasFreePages(){
-        for (int index = 0; index < blockSize / pageSize; index++)
-            if (!pages.get(index))
-                return true;
+        synchronized (pages) {
+            for (int index = 0; index < blockSize / pageSize; index++) {
+                if (!pages.get(index)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -57,6 +65,9 @@ public class Block {
             return false;
 
         int pageIndex = (int) Math.floor(virtualAddress / pageSize);
-        return pages.get(pageIndex);
+
+        synchronized (pages) {
+            return pages.get(pageIndex);
+        }
     }
 }

@@ -13,7 +13,7 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
 
     // Find the best fitted size (e.g. 3015 -> 4096, 17 -> 32, ...)
     public static int roundUp(int size){
-        return pow2((int) Math.ceil(Math.log(size) / LOG_2)); // 1 << a = 2^a
+        return pow2((int) Math.ceil(Math.log(size) / LOG_2));
     }
 
     public SingleThreadedAllocatorImplementation() {
