@@ -20,13 +20,9 @@ public class Arena {
 
     public Long getPage() {
         synchronized (blocks) {
-            for (Block block : blocks) {
-                synchronized (block) {
-                    if (block.hasFreePages()) {
-                        return block.getPage();
-                    }
-                }
-            }
+            for (Block block : blocks)
+                if (block.hasFreePages())
+                    return block.getPage();
         }
 
         // Geen plaats meer -> nieuwe toevoegen
@@ -42,15 +38,13 @@ public class Arena {
     public void freePage(Long address) throws AllocatorException {
         synchronized (blocks) {
             for (Block block : blocks) {
-                synchronized (block) {
-                    if (block.isAccessible(address)) {
-                        // block.freePage(address) returns true als het block leeg is -> block verwijderen
-                        if (block.freePage(address)) {
-                            blocks.remove(block);
-                            BackingStore.getInstance().munmap(block.getStartAddress(), block.getBlockSize());
-                        }
-                        return;
+                if (block.isAccessible(address)) {
+                    // block.freePage(address) returns true als het block leeg is -> block verwijderen
+                    if (block.freePage(address)) {
+                        blocks.remove(block);
+                        BackingStore.getInstance().munmap(block.getStartAddress(), block.getBlockSize());
                     }
+                    return;
                 }
             }
         }
@@ -59,13 +53,9 @@ public class Arena {
 
     public boolean isAccessible(Long address) {
         synchronized (blocks) {
-            for (Block block : blocks) {
-                synchronized (block) {
-                    if (block.isAccessible(address)) {
-                        return true;
-                    }
-                }
-            }
+            for (Block block : blocks)
+                if (block.isAccessible(address))
+                    return true;
         }
         return false;
     }

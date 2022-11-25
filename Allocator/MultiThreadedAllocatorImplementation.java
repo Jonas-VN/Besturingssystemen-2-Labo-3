@@ -28,30 +28,25 @@ public class MultiThreadedAllocatorImplementation implements Allocator {
     public Long allocate(int size) {
         int roundedSize = roundUp(size);
         synchronized (pageSizes) {
-            if (!pageSizes.containsKey(roundedSize)) {
+            if (!pageSizes.containsKey(roundedSize))
                 pageSizes.put(roundedSize, new Arena(roundedSize));
-            }
             return pageSizes.get(roundedSize).getPage();
         }
     }
 
     private Arena getArena(Long address) {
         synchronized (pageSizes) {
-            for (Arena arena : pageSizes.values()) {
-                synchronized (arena) {
-                    if (arena.isAccessible(address))
-                        return arena;
-                }
-            }
+            for (Arena arena : pageSizes.values())
+                if (arena.isAccessible(address))
+                    return arena;
         }
         return null;
     }
 
     public void free(Long address) {
         Arena arena = getArena(address);
-        synchronized (arena) {
-            arena.freePage(address);
-        }
+        assert arena != null;
+        arena.freePage(address);
     }
 
     public Long reAllocate(Long oldAddress, int newSize) {
@@ -61,11 +56,9 @@ public class MultiThreadedAllocatorImplementation implements Allocator {
 
     public boolean isAccessible(Long address) {
         synchronized (pageSizes) {
-            for (Integer entry : pageSizes.keySet()) {
-                if (pageSizes.get(entry).isAccessible(address)) {
+            for (Integer entry : pageSizes.keySet())
+                if (pageSizes.get(entry).isAccessible(address))
                     return true;
-                }
-            }
         }
         return false;
     }
@@ -73,9 +66,7 @@ public class MultiThreadedAllocatorImplementation implements Allocator {
     public boolean isAccessible(Long address, int size) {
         synchronized (pageSizes) {
             Arena arena = pageSizes.get(roundUp(size));
-            synchronized (arena) {
-                return arena.isAccessible(address);
-            }
+            return arena.isAccessible(address);
         }
 
     }

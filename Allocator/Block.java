@@ -49,11 +49,9 @@ public class Block {
 
     public boolean hasFreePages(){
         synchronized (pages) {
-            for (int index = 0; index < blockSize / pageSize; index++) {
-                if (!pages.get(index)) {
+            for (int index = 0; index < blockSize / pageSize; index++)
+                if (!pages.get(index))
                     return true;
-                }
-            }
         }
         return false;
     }
