@@ -4,14 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Arena {
-    private List<Block> memoryBlocks = new ArrayList<>();
-    private BackingStore backingStore = BackingStore.getInstance();
-
-    // size of the blocks in de arena
-    private int blockSize;
-
-    // size of the pages in the blocks of the arena
-    private int pageSize;
+    private final List<Block> blocks = new ArrayList<>();
+    private final int blockSize;
+    private final int pageSize;
 
     public Arena(int blockSize){
         this.blockSize = blockSize;
@@ -24,22 +19,24 @@ public class Arena {
     }
 
     public Long getPage() {
-        for (Block block : memoryBlocks)
+        for (Block block : blocks)
             if (block.hasFreePages())
                 return block.getPage();
 
-        Long ret = backingStore.mmap(blockSize);
+        // Geen plaats meer -> nieuwe toevoegen
+        Long ret = BackingStore.getInstance().mmap(blockSize);
         Block block = new Block(ret, pageSize, blockSize);
-        memoryBlocks.add(block);
+        blocks.add(block);
         return block.getPage();
     }
 
     public void freePage(Long address) throws AllocatorException {
-        for (Block block : memoryBlocks) {
+        for (Block block : blocks) {
             if (block.isAccessible(address)) {
+                // block.freePage(address) returns true als het block leeg is -> block verwijderen
                 if (block.freePage(address)) {
-                    memoryBlocks.remove(block);
-                    backingStore.munmap(block.getStartAddress(), block.getBlockSize());
+                    blocks.remove(block);
+                    BackingStore.getInstance().munmap(block.getStartAddress(), block.getBlockSize());
                 }
                 return;
             }
@@ -48,7 +45,7 @@ public class Arena {
     }
 
     public boolean isAccessible(Long address) {
-        for (Block block : memoryBlocks)
+        for (Block block : blocks)
             if (block.isAccessible(address))
                 return true;
         return false;

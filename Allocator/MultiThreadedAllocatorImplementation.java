@@ -15,7 +15,7 @@ public class MultiThreadedAllocatorImplementation implements Allocator {
 
         for (int i = 3; i < 13; i++) {
             int pageSize = (int) Math.pow(2, i);
-            pageSizes.put(pageSize, new Arena(Block.UNIT_BLOCK_SIZE, pageSize));
+            pageSizes.put(pageSize, new Arena(4096, pageSize));
         }
     }
 

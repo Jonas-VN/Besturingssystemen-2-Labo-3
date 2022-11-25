@@ -3,19 +3,25 @@ package Allocator;
 import java.util.*;
 
 public class SingleThreadedAllocatorImplementation implements Allocator {
-    private HashMap<Integer, Arena> pageSizes;
+    private final HashMap<Integer, Arena> pageSizes;
+    private static final double LOG_2 = Math.log(2); // niet nodig om telkens opnieuw te berekenen
+
+    // bit shifts zouden sneller moeten zijn ipv Math.pow(2, i)
+    private static int pow2(int exp) {
+        return 1 << exp; // -> 2^exp
+    }
 
     // Find the best fitted size (e.g. 3015 -> 4096, 17 -> 32, ...)
     public static int roundUp(int size){
-        return (int) Math.pow(2, Math.ceil(Math.log(size) / Math.log(2)));
+        return pow2((int) Math.ceil(Math.log(size) / LOG_2)); // 1 << a = 2^a
     }
 
     public SingleThreadedAllocatorImplementation() {
         this.pageSizes = new HashMap<>();
 
         for (int i = 0; i < 13; i++) {
-            int pageSize = (int) Math.pow(2, i);
-            pageSizes.put(pageSize, new Arena(Block.UNIT_BLOCK_SIZE, pageSize));
+            int pageSize = pow2(i);
+            pageSizes.put(pageSize, new Arena(4096, pageSize));
         }
     }
 
@@ -27,7 +33,7 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
         return pageSizes.get(roundedSize).getPage();
     }
 
-    private Arena getLocation(Long address) {
+    private Arena getArena(Long address) {
         for (Arena arena : pageSizes.values()) {
             if (arena.isAccessible(address))
                 return arena;
@@ -36,7 +42,7 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
     }
 
     public void free(Long address) {
-        Arena arena = getLocation(address);
+        Arena arena = getArena(address);
         if (arena != null)
             arena.freePage(address);
     }

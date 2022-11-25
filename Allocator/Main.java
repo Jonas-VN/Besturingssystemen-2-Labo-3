@@ -4,9 +4,9 @@ public class Main {
 
     public static void main(String[] args) {
         /* Tests */
-        int amount1 = 8193;
-        int amount2 = 8193;
-        int amount3 = 8193;
+        int amount1 = 999999999;
+        int amount2 = 999999999;
+        int amount3 = 999999999;
 
         Long address1 = Allocator.instance.allocate(amount1);
         System.out.println("Allocated " + amount1 + " bytes at " + address1);
