@@ -5,7 +5,6 @@ package Allocator;
 
 public interface Allocator {
     /* Modify this static var to return an instantiated version of your allocator  */
-//    static Allocator instance = new MultiThreadedLocalAllocator();
     static Allocator instance = new MultiThreadedAllocator();
 
     /* Allocates a new region of memory with the specified size */

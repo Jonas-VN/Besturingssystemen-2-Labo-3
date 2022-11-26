@@ -39,7 +39,7 @@ public class Block {
     public boolean freePage(Long address) throws AllocatorException {
         long virtualAddress = address - startAddress;
 
-        int pageIndex = (int) Math.floor(virtualAddress / pageSize);
+        int pageIndex = (int) Math.floor((double) virtualAddress / pageSize);
 
         synchronized (pages) {
             pages.set(pageIndex, false);
@@ -58,12 +58,10 @@ public class Block {
 
     public boolean isAccessible(Long address) {
         long virtualAddress = address - startAddress;
-
         if (virtualAddress < 0)
             return false;
 
-        int pageIndex = (int) Math.floor(virtualAddress / pageSize);
-
+        int pageIndex = (int) Math.floor((double) virtualAddress / pageSize);
         synchronized (pages) {
             return pages.get(pageIndex);
         }

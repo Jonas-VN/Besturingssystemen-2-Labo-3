@@ -3,7 +3,7 @@ package Allocator;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MultiThreadedAllocator implements Allocator {
-    private ConcurrentHashMap<Long, Allocator> allocators = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Allocator> allocators = new ConcurrentHashMap<>();
 
     @Override
     public Long allocate(int size) {
@@ -12,14 +12,12 @@ public class MultiThreadedAllocator implements Allocator {
 
     @Override
     public void free(Long address) {
-//        int i = 0;
+        // Veeeel te traag, maar het werkt :)
         for (Allocator allocator : allocators.values()) {
             try {
                 allocator.free(address);
-//                System.out.println("Free after " + i + " tries with thread " + Thread.currentThread().getId());
                 return;
-            } catch (AllocatorException ae) {
-//                i++;
+            } catch (AllocatorException ignored) {
             }
         }
     }
@@ -27,7 +25,7 @@ public class MultiThreadedAllocator implements Allocator {
     @Override
     public Long reAllocate(Long oldAddress, int newSize) {
         free(oldAddress);
-        return getAllocator().allocate(newSize);
+        return allocate(newSize);
     }
 
     @Override
@@ -41,9 +39,9 @@ public class MultiThreadedAllocator implements Allocator {
     }
 
     private Allocator getAllocator(){
-        long id = Thread.currentThread().getId();
+        Long id = Thread.currentThread().getId();
         if (!allocators.containsKey(id))
-            allocators.put(id, new SingleThreadedAllocatorImplementation());
+            allocators.put(id, new SingleThreadedAllocator());
 
         return allocators.get(id);
     }
