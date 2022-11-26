@@ -1,5 +1,6 @@
 package BankingSimulation;
 
+import java.sql.SQLSyntaxErrorException;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,7 +54,7 @@ public class Transaction {
     public void release() {
         if (ENABLE_ALLOCATOR) {
             Allocator.instance.free(address);
-            // ensureAllocated(false);
+            ensureAllocated(false);
         }
     }
 

@@ -28,14 +28,13 @@ public class Arena {
         // Geen plaats meer -> nieuwe toevoegen
         Long ret = BackingStore.getInstance().mmap(blockSize);
         Block block = new Block(ret, pageSize, blockSize);
-
         synchronized (blocks) {
             blocks.add(block);
         }
         return block.getPage();
     }
 
-    public void freePage(Long address) throws AllocatorException {
+    public void freePage(Long address) {
         synchronized (blocks) {
             for (Block block : blocks) {
                 if (block.isAccessible(address)) {
@@ -48,7 +47,6 @@ public class Arena {
                 }
             }
         }
-        throw new AllocatorException("Page not present in arena");
     }
 
     public boolean isAccessible(Long address) {

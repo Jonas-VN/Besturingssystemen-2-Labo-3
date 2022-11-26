@@ -19,7 +19,7 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
     public SingleThreadedAllocatorImplementation() {
         this.pageSizes = new HashMap<>();
 
-        for (int i = 0; i < 13; i++) {
+        for (int i = 3; i < 13; i++) {
             int pageSize = pow2(i);
             pageSizes.put(pageSize, new Arena(4096, pageSize));
         }
@@ -27,24 +27,19 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
 
     public Long allocate(int size) {
         int roundedSize = roundUp(size);
-        if (!pageSizes.containsKey(roundedSize)) {
-            pageSizes.put(roundedSize, new Arena(roundedSize));
+        synchronized (pageSizes) {
+            if (!pageSizes.containsKey(roundedSize))
+                pageSizes.put(roundedSize, new Arena(roundedSize));
+            return pageSizes.get(roundedSize).getPage();
         }
-        return pageSizes.get(roundedSize).getPage();
-    }
-
-    private Arena getArena(Long address) {
-        for (Arena arena : pageSizes.values()) {
-            if (arena.isAccessible(address))
-                return arena;
-        }
-        return null;
     }
 
     public void free(Long address) {
-        Arena arena = getArena(address);
-        if (arena != null)
-            arena.freePage(address);
+        synchronized (pageSizes) {
+            for (Arena arena: pageSizes.values())
+                if (arena.isAccessible(address))
+                    arena.freePage(address);
+        }
     }
 
     public Long reAllocate(Long oldAddress, int newSize) {
@@ -53,16 +48,18 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
     }
 
     public boolean isAccessible(Long address) {
-        for (Integer entry : pageSizes.keySet()) {
-            if (pageSizes.get(entry).isAccessible(address)) {
-                return true;
-            }
+        synchronized (pageSizes) {
+            for (Integer entry : pageSizes.keySet())
+                if (pageSizes.get(entry).isAccessible(address))
+                    return true;
         }
         return false;
     }
 
     public boolean isAccessible(Long address, int size) {
-        Arena arena = pageSizes.get(roundUp(size));
-        return arena.isAccessible(address);
+        synchronized (pageSizes) {
+            Arena arena = pageSizes.get(roundUp(size));
+            return arena.isAccessible(address);
+        }
     }
 }

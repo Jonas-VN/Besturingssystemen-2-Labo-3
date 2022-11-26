@@ -33,11 +33,11 @@ public class Block {
                 }
             }
         }
-        throw new AllocatorException("No free pages in block");
+        throw new AllocatorException("No free pages in block with size " + blockSize);
     }
 
     public boolean freePage(Long address) throws AllocatorException {
-        Long virtualAddress = address - startAddress;
+        long virtualAddress = address - startAddress;
 
         int pageIndex = (int) Math.floor(virtualAddress / pageSize);
 
@@ -57,7 +57,7 @@ public class Block {
     }
 
     public boolean isAccessible(Long address) {
-        Long virtualAddress = address - startAddress;
+        long virtualAddress = address - startAddress;
 
         if (virtualAddress < 0)
             return false;
