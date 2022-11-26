@@ -34,12 +34,16 @@ public class SingleThreadedAllocatorImplementation implements Allocator {
         }
     }
 
-    public void free(Long address) {
+    public void free(Long address) throws AllocatorException {
         synchronized (pageSizes) {
-            for (Arena arena: pageSizes.values())
-                if (arena.isAccessible(address))
+            for (Arena arena : pageSizes.values()) {
+                if (arena.isAccessible(address)) {
                     arena.freePage(address);
+                    return;
+                }
+            }
         }
+        throw new AllocatorException("Address not available in this thread " + Thread.currentThread().getId());
     }
 
     public Long reAllocate(Long oldAddress, int newSize) {
