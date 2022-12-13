@@ -9,10 +9,10 @@ public class MyAllocatorImpl implements Allocator {
     @Override
     public Long allocate(int size) {
         synchronized (this) {
-            Long ret = BackingStore.getInstance().mmap(size);
+            Long ret = OperatingSystem.getInstance().mmap(size);
             Long lsize = (long) size;
             alloccedBlocks.put(ret, lsize);
-            System.out.println("Allocating " + size + " bytes at " + ret);
+            // System.out.println("Allocating " + size + " bytes at " + ret);
             return ret;
         }
     }
@@ -24,8 +24,8 @@ public class MyAllocatorImpl implements Allocator {
             if (size == null)
                 throw new AllocatorException("huh??");
             alloccedBlocks.remove(address);
-            BackingStore.getInstance().munmap(address, size);
-            System.out.println("Freeing " + size + " bytes at " + address);
+            OperatingSystem.getInstance().munmap(address, size);
+            // System.out.println("Freeing " + size + " bytes at " + address);
         }
     }
 

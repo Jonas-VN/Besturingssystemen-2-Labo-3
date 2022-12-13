@@ -1,61 +1,59 @@
 package Allocator;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Arena {
-    private final List<Block> blocks = new ArrayList<>();
+    private final ConcurrentLinkedQueue<Block> blocks;
     private final int blockSize;
     private final int pageSize;
 
     public Arena(int blockSize){
         this.blockSize = blockSize;
         this.pageSize = blockSize;
+        this.blocks = new ConcurrentLinkedQueue<>();
     }
 
     public Arena(int blockSize, int pageSize){
         this.blockSize = blockSize;
         this.pageSize = pageSize;
+        this.blocks = new ConcurrentLinkedQueue<>();
     }
 
-    public Long getPage() {
-        synchronized (blocks) {
-            for (Block block : blocks)
-                if (block.hasFreePages())
-                    return block.getPage();
-        }
+    public int getPageSize() {
+        return pageSize;
+    }
 
-        // Geen plaats meer -> nieuwe toevoegen
-        Long ret = BackingStore.getInstance().mmap(blockSize);
+    public Long allocate() {
+        for (Block block : blocks) {
+            if (block.hasFreePages()) {
+                return block.allocate();
+            }
+        }
+        // Alle blocken zijn vol -> nieuwe maken
+        Long ret = OperatingSystem.getInstance().mmap(blockSize);
         Block block = new Block(ret, pageSize, blockSize);
-        synchronized (blocks) {
-            blocks.add(block);
-        }
-        return block.getPage();
+        blocks.add(block);
+        return block.allocate();
     }
 
-    public void freePage(Long address) {
-        synchronized (blocks) {
-            for (Block block : blocks) {
-                if (block.isAccessible(address)) {
-                    // block.freePage(address) returns true als het block leeg is -> block verwijderen
-                    if (block.freePage(address)) {
-                        blocks.remove(block);
-                        BackingStore.getInstance().munmap(block.getStartAddress(), block.getBlockSize());
-                    }
-                    return;
-                }
+    public void free(Long address) {
+        for (Block block : blocks) {
+            if (block.isAccessible(address)) {
+                block.free(address);
+                return;
             }
         }
     }
 
     public boolean isAccessible(Long address) {
-        synchronized (blocks) {
-            for (Block block : blocks)
-                if (block.isAccessible(address))
-                    return true;
+        return isAccessible(address, 1);
+    }
+
+    public boolean isAccessible(Long address, int size) {
+        for (Block block : blocks) {
+            if (block.isAccessible(address, size))
+                return true;
         }
         return false;
     }
 }
-

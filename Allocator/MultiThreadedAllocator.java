@@ -2,47 +2,59 @@ package Allocator;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MultiThreadedAllocator implements Allocator {
-    private final ConcurrentHashMap<Long, Allocator> allocators = new ConcurrentHashMap<>();
 
-    @Override
-    public Long allocate(int size) {
-        return getAllocator().allocate(size);
+public class MultiThreadedAllocator implements Allocator {
+    private final ConcurrentHashMap<Long, SingleThreadedAllocator> allocators;
+
+    public MultiThreadedAllocator() {
+        allocators = new ConcurrentHashMap<>();
     }
 
-    @Override
+    public SingleThreadedAllocator getAllocator() {
+        if (allocators.containsKey(Thread.currentThread().getId())) return allocators.get(Thread.currentThread().getId());
+
+        SingleThreadedAllocator allocator = new SingleThreadedAllocator();
+        allocators.put(Thread.currentThread().getId(), allocator);
+        return allocator;
+    }
+
+    public Long allocate(int size) {
+        SingleThreadedAllocator allocator = getAllocator();
+        return allocator.allocate(size);
+    }
+
     public void free(Long address) {
-        // Veeeel te traag, maar het werkt :)
-        for (Allocator allocator : allocators.values()) {
-            try {
+        for (SingleThreadedAllocator allocator : allocators.values()) {
+            if (allocator.isAccessible(address)) {
                 allocator.free(address);
-                return;
-            } catch (AllocatorException ignored) {
+                break;
             }
         }
     }
 
-    @Override
     public Long reAllocate(Long oldAddress, int newSize) {
-        free(oldAddress);
-        return allocate(newSize);
+        for (SingleThreadedAllocator allocator : allocators.values()) {
+            if (allocator.isAccessible(oldAddress)) {
+                allocator.free(oldAddress);
+                break;
+            }
+        }
+        // Reallocate to current thread
+        SingleThreadedAllocator allocator = getAllocator();
+        return allocator.allocate(newSize);
+
     }
 
-    @Override
     public boolean isAccessible(Long address) {
-        return getAllocator().isAccessible(address);
+        return isAccessible(address, 1);
     }
 
-    @Override
     public boolean isAccessible(Long address, int size) {
-        return getAllocator().isAccessible(address, size);
-    }
-
-    private Allocator getAllocator(){
-        Long id = Thread.currentThread().getId();
-        if (!allocators.containsKey(id))
-            allocators.put(id, new SingleThreadedAllocator());
-
-        return allocators.get(id);
+        for (SingleThreadedAllocator allocator : allocators.values()) {
+            if (allocator.isAccessible(address)) {
+                return allocator.isAccessible(address, size);
+            }
+        }
+        return false;
     }
 }
